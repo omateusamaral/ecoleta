@@ -1,4 +1,4 @@
-<h1 align="center"> Ecoleta ♻  </h1>
+<h1 align="center">♻ Ecoleta   </h1>
 
 Aplicação criada na NLW da Rocketseat para empresas fazerem reciclagem de produtos.
 
