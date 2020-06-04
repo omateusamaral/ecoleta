@@ -1,0 +1,36 @@
+#page-sucess {
+  height: 100vh;
+  background: #000;
+}
+
+#page-sucess .container {
+  display: flex;
+  justify-content: center;
+}
+
+.linksucess {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+  font-size: 42px;
+  text-decoration: none;
+  margin-top: 40vh;
+  animation-name: up;
+  animation-duration: 1000ms;
+}
+#page-sucess .container p {
+  font-weight: bold;
+  color: #fff;
+}
+
+@keyframes up {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+  }
+}
