@@ -1,8 +1,9 @@
-import React, { useState, useEffect, ChangeEvent } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
+import { Link, useHistory } from "react-router-dom";
 import { FiArrowLeft } from "react-icons/fi";
 import { Map, TileLayer, Marker } from "react-leaflet";
 import axios from "axios";
+import { LeafletMouseEvent } from "leaflet";
 import api from "../../services/api";
 
 import "./CreatePoint.css";
@@ -23,6 +24,31 @@ const Point = () => {
   const [ufs, setUfs] = useState<string[]>([]);
   const [selectedUf, setSelectedUf] = useState("0");
   const [cities, setCities] = useState<string[]>([]);
+  const [selectedCity, setSelectedCity] = useState("0");
+  const [selectedPosistion, setSelectedPosistion] = useState<[number, number]>([
+    0,
+    0,
+  ]);
+
+  const [initialPosistion, setInitialPosistion] = useState<[number, number]>([
+    0,
+    0,
+  ]);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    whatsapp: "",
+  });
+  const [selectedItems, setSelectedItems] = useState<number[]>([]);
+
+  const history = useHistory();
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition((position) => {
+      const { latitude, longitude } = position.coords;
+
+      setInitialPosistion([latitude, longitude]);
+    });
+  }, []);
   useEffect(() => {
     api.get("/items").then((response) => {
       setItems(response.data);
@@ -59,6 +85,59 @@ const Point = () => {
     const ufvalue = event.target.value;
     setSelectedUf(ufvalue);
   }
+  function handleSelectCity(event: ChangeEvent<HTMLSelectElement>) {
+    const cityvalue = event.target.value;
+    setSelectedCity(cityvalue);
+  }
+
+  function handleMapClick(event: LeafletMouseEvent) {
+    setSelectedPosistion([event.latlng.lat, event.latlng.lng]);
+  }
+
+  function handleInputChange(event: ChangeEvent<HTMLInputElement>) {
+    const { name, value } = event.target;
+
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  }
+  function handleSelectedItem(id: number) {
+    const alreadySelected = selectedItems.findIndex((item) => item === id);
+
+    if (alreadySelected >= 0) {
+      const filteredItems = selectedItems.filter((item) => item !== id);
+      setSelectedItems(filteredItems);
+    } else {
+      setSelectedItems([...selectedItems, id]);
+    }
+  }
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+
+    const { name, email, whatsapp } = formData;
+
+    const uf = selectedUf;
+    const city = selectedCity;
+    const [latitude, longitude] = selectedPosistion;
+    const items = selectedItems;
+
+    const data = {
+      name,
+      email,
+      whatsapp,
+      uf,
+      city,
+      latitude,
+      longitude,
+      items,
+    };
+
+    await api.post("points", data);
+    alert("deu certo");
+    history.push("/");
+  }
   return (
     <div id="page-create-point">
       <header>
@@ -69,7 +148,7 @@ const Point = () => {
           Voltar para home
         </Link>
       </header>
-      <form>
+      <form onSubmit={handleSubmit}>
         <h1>
           Cadastro do <br />
           ponto de coleta
@@ -79,18 +158,33 @@ const Point = () => {
             <h2>dados</h2>
           </legend>
           <div className="field">
-            <label htmlFor="email">E-mail</label>
-            <input type="email" name="email" id="email" />
+            <label htmlFor="email">Nome da entidade</label>
+            <input
+              type="text"
+              name="name"
+              id="name"
+              onChange={handleInputChange}
+            />
           </div>
 
           <div className="field-group">
             <div className="field">
-              <label htmlFor="whatsapp">Whatsapp</label>
-              <input type="text" name="whatsapp" id="whatsapp" />
+              <label htmlFor="whatsapp">E-mail</label>
+              <input
+                type="email"
+                name="email"
+                id="email"
+                onChange={handleInputChange}
+              />
             </div>
             <div className="field">
-              <label htmlFor="name">Nome da entidade</label>
-              <input type="text" name="name" id="name" />
+              <label htmlFor="name">Whatsapp</label>
+              <input
+                type="text"
+                name="whatsapp"
+                id="whatsapp"
+                onChange={handleInputChange}
+              />
             </div>
           </div>
         </fieldset>
@@ -100,12 +194,12 @@ const Point = () => {
             <h2>Endereços</h2>
             <span>Selecione o Endereço do mapa</span>
           </legend>
-          <Map center={[-23.5394927, -46.3421695]} zoom={20}>
+          <Map center={initialPosistion} zoom={20} onClick={handleMapClick}>
             <TileLayer
               attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <Marker position={[-23.5394927, -46.3421695]} />
+            <Marker position={selectedPosistion} />
           </Map>
 
           <div className="field-group">
@@ -128,7 +222,12 @@ const Point = () => {
 
             <div className="field">
               <label htmlFor="city">Cidade</label>
-              <select name="city" id="city">
+              <select
+                name="city"
+                id="city"
+                value={selectedCity}
+                onChange={handleSelectCity}
+              >
                 <option value="0">Selecione uma cidade</option>
 
                 {cities.map((city) => (
@@ -148,7 +247,11 @@ const Point = () => {
           </legend>
           <ul className="items-grid">
             {items.map((item) => (
-              <li key={item.id}>
+              <li
+                key={item.id}
+                onClick={() => handleSelectedItem(item.id)}
+                className={selectedItems.includes(item.id) ? "selected" : ""}
+              >
                 <img src={item.image_url} alt={item.title} />
                 <span>{item.title}</span>
               </li>
