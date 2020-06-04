@@ -135,8 +135,8 @@ const Point = () => {
     };
 
     await api.post("points", data);
-    alert("deu certo");
-    history.push("/");
+
+    history.push("/sucess");
   }
   return (
     <div id="page-create-point">
